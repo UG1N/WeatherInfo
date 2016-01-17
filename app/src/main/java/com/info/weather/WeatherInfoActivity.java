@@ -18,6 +18,12 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.squareup.picasso.Picasso;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 public class WeatherInfoActivity extends AppCompatActivity implements
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
@@ -33,6 +39,7 @@ public class WeatherInfoActivity extends AppCompatActivity implements
     private Weather mWeather;
 
     private final String imageUrl = "http://openweathermap.org/img/w/";
+    public static final String FILENAME = "weather";
 
 
     @Override
@@ -62,6 +69,7 @@ public class WeatherInfoActivity extends AppCompatActivity implements
         });
 
         buildGoogleApiClient();
+        mGoogleApiClient.connect();
     }
 
     private void showTheWeather(String url) {
@@ -106,7 +114,6 @@ public class WeatherInfoActivity extends AppCompatActivity implements
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
-
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         if (mLastLocation != null) {
             firstLocation = String.valueOf(mLastLocation.getLatitude() + "&lon=" + mLastLocation.getLongitude()).replaceAll(",", ".");
@@ -123,18 +130,61 @@ public class WeatherInfoActivity extends AppCompatActivity implements
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
+        loadSavedWeather();
         Toast.makeText(this, "please, turn on internet", Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        mGoogleApiClient.connect();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        saveTheWeather();
         mGoogleApiClient.disconnect();
+    }
+
+    private void saveTheWeather() {
+        FileOutputStream fos = null;
+        ObjectOutputStream objectOutputStream = null;
+        try {
+            fos = openFileOutput(FILENAME, MODE_PRIVATE);
+            objectOutputStream = new ObjectOutputStream(fos);
+            objectOutputStream.writeObject(mWeather);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (fos != null) {
+                    fos.close();
+                }
+                if (objectOutputStream != null) {
+                    objectOutputStream.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void loadSavedWeather() {
+        FileInputStream fis = null;
+        ObjectInputStream ois = null;
+        try {
+            fis = openFileInput(FILENAME);
+            ois = new ObjectInputStream(fis);
+            mWeather = (Weather) ois.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (fis != null) {
+                    fis.close();
+                }
+                if (ois != null) {
+                    ois.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            updateView();
+        }
     }
 }

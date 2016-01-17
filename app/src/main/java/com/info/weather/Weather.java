@@ -1,8 +1,9 @@
 package com.info.weather;
 
+import java.io.Serializable;
 import java.lang.String;
 
-public class Weather {
+public class Weather implements Serializable {
     private String mCity;
     private int mTemperature;
     private String mIcon;
