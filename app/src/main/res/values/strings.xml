@@ -3,4 +3,5 @@
     <string name="weather_button">Show me the weather</string>
     <string name="celsius">Celsius</string>
     <string name="kelvin">Kelvin</string>
+    <string name="temperature_format">%1$d°</string>
 </resources>

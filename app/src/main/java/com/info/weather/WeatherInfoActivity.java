@@ -1,11 +1,11 @@
 package com.info.weather;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -16,19 +16,19 @@ import android.widget.Toast;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
-import com.squareup.picasso.Picasso;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
+import static android.Manifest.permission.ACCESS_FINE_LOCATION;
+import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+import static com.info.weather.WeatherApi.LocationBuilder.Units.IMPERIAL;
+import static com.info.weather.WeatherApi.LocationBuilder.Units.METRIC;
 
 public class WeatherInfoActivity extends AppCompatActivity implements
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
+    private static final String TAG = WeatherInfoActivity.class.getSimpleName();
+
     protected GoogleApiClient mGoogleApiClient;
-    protected Location mLastLocation;
 
     private Button mStartWeatherButton;
     private EditText mCityEditText;
@@ -37,10 +37,6 @@ public class WeatherInfoActivity extends AppCompatActivity implements
     private ImageView mWeatherIcon;
     private boolean weatherFormat = false;
     private Weather mWeather;
-
-    private final String imageUrl = "http://openweathermap.org/img/w/";
-    public static final String FILENAME = "weather";
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +50,11 @@ public class WeatherInfoActivity extends AppCompatActivity implements
         mStartWeatherButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showTheWeather(getFormatUrl());
+                showTheWeather(WeatherApi
+                        .locationBuilder()
+                        .location(mCityEditText.getText())
+                        .untis(weatherFormat ? IMPERIAL : METRIC)
+                        .build());
             }
         });
 
@@ -64,7 +64,11 @@ public class WeatherInfoActivity extends AppCompatActivity implements
             @Override
             public void onClick(View v) {
                 weatherFormat = !weatherFormat;
-                showTheWeather(getFormatUrl());
+                showTheWeather(WeatherApi
+                        .locationBuilder()
+                        .location(mCityEditText.getText())
+                        .untis(weatherFormat ? IMPERIAL : METRIC)
+                        .build());
             }
         });
 
@@ -72,28 +76,25 @@ public class WeatherInfoActivity extends AppCompatActivity implements
         mGoogleApiClient.connect();
     }
 
-    private void showTheWeather(String url) {
-        new JSONParserAsync(this, mWeather).execute(url);
+    private void showTheWeather(final String url) {
+        new JSONParserAsync() {
+            @Override
+            protected void onPostExecute(Weather weather) {
+                if (weather != null) {
+                    mWeather = weather;
+                    updateView();
+                } else {
+                    Log.e(TAG, "Can't get weather data from url: " + url, mException);
+                }
+            }
+        }.execute(url);
     }
 
     public void updateView() {
         mCityNameTextView.setText(mWeather.getCity());
-        mCityTemperatureTextView.setText(String.valueOf(mWeather.getTemperature()) + "°");
-        Picasso.with(this).
-                load(imageUrl + mWeather.getIcon() + ".png").
-                into(mWeatherIcon);
-    }
-
-    public String getFormatUrl() {
-        String format;
-        if (!weatherFormat) {
-            format = "&units=metric";
-        } else {
-            format = "";
-        }
-        return "http://api.openweathermap.org/data/2.5/weather?q=" +
-                mCityEditText.getText().toString().replaceAll(" ", "") +
-                format + "&appid=2de143494c0b295cca9337e1e96b00e0";
+        mCityTemperatureTextView.setText(getString(
+                R.string.temperature_format, mWeather.getTemperature()));
+        mWeatherIcon.setImageResource(WeatherApi.iconResourceBuilder(this).weather(mWeather).build());
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -109,19 +110,22 @@ public class WeatherInfoActivity extends AppCompatActivity implements
     @Override
     public void onConnected(Bundle bundle) {
         Toast.makeText(this, "onConnected", Toast.LENGTH_SHORT).show();
-        String firstLocation = "";
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) != PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, ACCESS_COARSE_LOCATION) != PERMISSION_GRANTED) {
             return;
         }
-        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        if (mLastLocation != null) {
-            firstLocation = String.valueOf(mLastLocation.getLatitude() + "&lon=" + mLastLocation.getLongitude()).replaceAll(",", ".");
+
+        Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        if (location == null) {
+            return;
         }
-        String firstUrl = "http://api.openweathermap.org/data/2.5/weather?lat=" +
-                firstLocation +
-                "&units=metric&appid=2de143494c0b295cca9337e1e96b00e0";
-        showTheWeather(firstUrl);
+
+        String requestUrl = WeatherApi.coordinatesBuilder()
+                .latitude(location.getLatitude())
+                .longitude(location.getLongitude())
+                .build();
+        showTheWeather(requestUrl);
     }
 
     @Override
@@ -129,62 +133,16 @@ public class WeatherInfoActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-        loadSavedWeather();
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        mWeather = WeatherStorage.loadSavedWeather(this);
+        updateView();
         Toast.makeText(this, "please, turn on internet", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        saveTheWeather();
+        WeatherStorage.saveTheWeather(this, mWeather);
         mGoogleApiClient.disconnect();
-    }
-
-    private void saveTheWeather() {
-        FileOutputStream fos = null;
-        ObjectOutputStream objectOutputStream = null;
-        try {
-            fos = openFileOutput(FILENAME, MODE_PRIVATE);
-            objectOutputStream = new ObjectOutputStream(fos);
-            objectOutputStream.writeObject(mWeather);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (fos != null) {
-                    fos.close();
-                }
-                if (objectOutputStream != null) {
-                    objectOutputStream.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void loadSavedWeather() {
-        FileInputStream fis = null;
-        ObjectInputStream ois = null;
-        try {
-            fis = openFileInput(FILENAME);
-            ois = new ObjectInputStream(fis);
-            mWeather = (Weather) ois.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (fis != null) {
-                    fis.close();
-                }
-                if (ois != null) {
-                    ois.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            updateView();
-        }
     }
 }
