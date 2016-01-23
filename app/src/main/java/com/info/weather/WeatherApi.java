@@ -39,7 +39,7 @@ public class WeatherApi {
                     .append(mLatitude)
                     .append("&lon=")
                     .append(mLongitude)
-                    .append("&units=metric&appid=2de143494c0b295cca9337e1e96b00e0")
+                    .append("&units=metric&appid=c7b3b5a86a23d0e8d4b862787f675958")
                     .toString();
         }
     }
@@ -81,7 +81,7 @@ public class WeatherApi {
                     .append(mLocationName)
                     .append("&units=")
                     .append(mUnits.getParamValue())
-                    .append("&appid=2de143494c0b295cca9337e1e96b00e0")
+                    .append("&appid=c7b3b5a86a23d0e8d4b862787f675958")
                     .toString();
         }
 

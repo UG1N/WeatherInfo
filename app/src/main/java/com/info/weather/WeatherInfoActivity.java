@@ -1,5 +1,8 @@
 package com.info.weather;
 
+import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
+import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -16,6 +19,9 @@ import android.widget.Toast;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
+
+import java.io.File;
+import java.util.Date;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
@@ -73,7 +79,6 @@ public class WeatherInfoActivity extends AppCompatActivity implements
         });
 
         buildGoogleApiClient();
-        mGoogleApiClient.connect();
     }
 
     private void showTheWeather(final String url) {
@@ -83,6 +88,7 @@ public class WeatherInfoActivity extends AppCompatActivity implements
                 if (weather != null) {
                     mWeather = weather;
                     updateView();
+                    Log.d("InfoActivity", new Date().toString() + " it should be first");
                 } else {
                     Log.e(TAG, "Can't get weather data from url: " + url, mException);
                 }
@@ -95,6 +101,7 @@ public class WeatherInfoActivity extends AppCompatActivity implements
         mCityTemperatureTextView.setText(getString(
                 R.string.temperature_format, mWeather.getTemperature()));
         mWeatherIcon.setImageResource(WeatherApi.iconResourceBuilder(this).weather(mWeather).build());
+        mCityEditText.setText(mWeather.getCity());
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -121,11 +128,29 @@ public class WeatherInfoActivity extends AppCompatActivity implements
             return;
         }
 
-        String requestUrl = WeatherApi.coordinatesBuilder()
+        final String requestUrl = WeatherApi.coordinatesBuilder()
                 .latitude(location.getLatitude())
                 .longitude(location.getLongitude())
                 .build();
-        showTheWeather(requestUrl);
+
+        new JSONParserAsync() {
+            @Override
+            protected void onPostExecute(Weather weather) {
+                if (weather != null) {
+                    mWeather = weather;
+                    updateView();
+                    Intent intent = new Intent(WeatherInfoActivity.this, WeatherWidget.class);
+                    intent.setAction(WeatherWidget.SEND_ITEM);
+                    intent.putExtra(WeatherWidget.EXTRA_WEATHER, mWeather);
+                    int ids[] = AppWidgetManager.getInstance(getApplication()).
+                            getAppWidgetIds(new ComponentName(getApplication(), WeatherWidget.class));
+                    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
+                    sendBroadcast(intent);
+                } else {
+                    Log.e(TAG, "Can't get weather data from url: " + requestUrl, mException);
+                }
+            }
+        }.execute(requestUrl);
     }
 
     @Override
@@ -134,9 +159,17 @@ public class WeatherInfoActivity extends AppCompatActivity implements
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        mWeather = WeatherStorage.loadSavedWeather(this);
-        updateView();
-        Toast.makeText(this, "please, turn on internet", Toast.LENGTH_SHORT).show();
+        if (new File(WeatherStorage.FILENAME).exists()) {
+            mWeather = WeatherStorage.loadSavedWeather(this);
+            updateView();
+        }
+        Toast.makeText(this, "please, turn on location service", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mGoogleApiClient.connect();
     }
 
     @Override
