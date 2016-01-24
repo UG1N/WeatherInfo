@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
@@ -34,8 +35,8 @@ public class WeatherWidget extends AppWidgetProvider {
             views.setTextViewText(R.id.widget_city, mWeather.getCity());
             views.setTextViewText(R.id.widget_temperature,
                     context.getString(R.string.temperature_format, mWeather.getTemperature()));
-
             Intent intent = new Intent(context, WeatherWidget.class);
+            intent.putExtra(EXTRA_WEATHER, mWeather);
             intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
             intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, AppWidgetManager.getInstance(context)
                     .getAppWidgetIds(new ComponentName(context.getApplicationContext(), WeatherWidget.class)));
@@ -66,21 +67,30 @@ public class WeatherWidget extends AppWidgetProvider {
         super.onReceive(context, intent);
 
         if (SEND_ITEM.equals(intent.getAction())) {
-            mWeather = (Weather) intent.getSerializableExtra(EXTRA_WEATHER);
-            onUpdate(context, AppWidgetManager.getInstance(context), intent.getExtras().getIntArray(AppWidgetManager.EXTRA_APPWIDGET_IDS));
+            weatherUpdate(context, intent);
         } else if (mWeather != null) {
-            new JSONParserAsync() {
-                @Override
-                protected void onPostExecute(Weather weather) {
-                    Toast.makeText(context, "updated", Toast.LENGTH_SHORT).show();
-                    mWeather = weather;
-                    onUpdate(context, AppWidgetManager.getInstance(context), intent.getExtras().getIntArray(AppWidgetManager.EXTRA_APPWIDGET_IDS));
-                }
-            }.execute(WeatherApi.locationBuilder()
-                    .location(mWeather.getCity())
-                    .untis(WeatherApi.LocationBuilder.Units.METRIC)
-                    .build());
+            if (((ConnectivityManager)
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo().isConnectedOrConnecting()) {
+                new JSONParserAsync() {
+                    @Override
+                    protected void onPostExecute(Weather weather) {
+                        Toast.makeText(context, "updated", Toast.LENGTH_SHORT).show();
+                        mWeather = weather;
+                        onUpdate(context, AppWidgetManager.getInstance(context), intent.getExtras().getIntArray(AppWidgetManager.EXTRA_APPWIDGET_IDS));
+                    }
+                }.execute(WeatherApi.locationBuilder()
+                        .location(mWeather.getCity())
+                        .untis(WeatherApi.LocationBuilder.Units.METRIC)
+                        .build());
+            } else {
+                weatherUpdate(context, intent);
+            }
         }
+    }
+
+    private void weatherUpdate(Context context, Intent intent) {
+        mWeather = (Weather) intent.getSerializableExtra(EXTRA_WEATHER);
+        onUpdate(context, AppWidgetManager.getInstance(context), intent.getExtras().getIntArray(AppWidgetManager.EXTRA_APPWIDGET_IDS));
     }
 }
 
