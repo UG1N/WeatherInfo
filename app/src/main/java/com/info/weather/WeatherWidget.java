@@ -11,7 +11,6 @@ public class WeatherWidget extends AppWidgetProvider {
 
     public static final String SEND_ITEM = "LOCATION_CHANGED";
     public static final String EXTRA_WEATHER = "Weather";
-    public static final String EXTRA_WIDGET_ID = "WidgetId";
 
     private static Weather mWeather;
 
@@ -36,7 +35,6 @@ public class WeatherWidget extends AppWidgetProvider {
 
             Intent intent = new Intent(context, WeatherWidget.class);
             intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
-            intent.putExtra(EXTRA_WIDGET_ID, appWidgetId);
             pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
             views.setOnClickPendingIntent(R.id.widget_layout, pendingIntent);
@@ -70,7 +68,7 @@ public class WeatherWidget extends AppWidgetProvider {
             new JSONParserAsync() {
                 @Override
                 protected void onPostExecute(Weather weather) {
-                    mWeather = setWeather(weather);
+                    mWeather = weather;
                     onUpdate(context, AppWidgetManager.getInstance(context), intent.getExtras().getIntArray(AppWidgetManager.EXTRA_APPWIDGET_IDS));
                 }
             }.execute(WeatherApi.locationBuilder()
@@ -78,11 +76,6 @@ public class WeatherWidget extends AppWidgetProvider {
                     .untis(WeatherApi.LocationBuilder.Units.METRIC)
                     .build());
         }
-    }
-
-    public static Weather setWeather(Weather mWeather) {
-        WeatherWidget.mWeather = mWeather;
-        return mWeather;
     }
 }
 
