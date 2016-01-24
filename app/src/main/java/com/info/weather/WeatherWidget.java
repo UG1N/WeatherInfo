@@ -70,13 +70,15 @@ public class WeatherWidget extends AppWidgetProvider {
             weatherUpdate(context, intent);
         } else if (mWeather != null) {
             if (((ConnectivityManager)
-                    context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo().isConnectedOrConnecting()) {
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE))
+                    .getActiveNetworkInfo().isConnectedOrConnecting()) {
                 new JSONParserAsync() {
                     @Override
                     protected void onPostExecute(Weather weather) {
                         Toast.makeText(context, "updated", Toast.LENGTH_SHORT).show();
                         mWeather = weather;
-                        onUpdate(context, AppWidgetManager.getInstance(context), intent.getExtras().getIntArray(AppWidgetManager.EXTRA_APPWIDGET_IDS));
+                        onUpdate(context, AppWidgetManager.getInstance(context),
+                                intent.getExtras().getIntArray(AppWidgetManager.EXTRA_APPWIDGET_IDS));
                     }
                 }.execute(WeatherApi.locationBuilder()
                         .location(mWeather.getCity())
@@ -90,7 +92,8 @@ public class WeatherWidget extends AppWidgetProvider {
 
     private void weatherUpdate(Context context, Intent intent) {
         mWeather = (Weather) intent.getSerializableExtra(EXTRA_WEATHER);
-        onUpdate(context, AppWidgetManager.getInstance(context), intent.getExtras().getIntArray(AppWidgetManager.EXTRA_APPWIDGET_IDS));
+        onUpdate(context, AppWidgetManager.getInstance(context),
+                intent.getExtras().getIntArray(AppWidgetManager.EXTRA_APPWIDGET_IDS));
     }
 }
 
