@@ -79,6 +79,7 @@ public class WeatherInfoActivity extends AppCompatActivity implements
         });
 
         buildGoogleApiClient();
+        mGoogleApiClient.connect();
     }
 
     private void showTheWeather(final String url) {
@@ -164,12 +165,6 @@ public class WeatherInfoActivity extends AppCompatActivity implements
             updateView();
         }
         Toast.makeText(this, "please, turn on location service", Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        mGoogleApiClient.connect();
     }
 
     @Override

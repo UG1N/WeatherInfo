@@ -3,9 +3,11 @@ package com.info.weather;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViews;
+import android.widget.Toast;
 
 public class WeatherWidget extends AppWidgetProvider {
 
@@ -35,6 +37,8 @@ public class WeatherWidget extends AppWidgetProvider {
 
             Intent intent = new Intent(context, WeatherWidget.class);
             intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, AppWidgetManager.getInstance(context)
+                    .getAppWidgetIds(new ComponentName(context.getApplicationContext(), WeatherWidget.class)));
             pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
             views.setOnClickPendingIntent(R.id.widget_layout, pendingIntent);
@@ -68,6 +72,7 @@ public class WeatherWidget extends AppWidgetProvider {
             new JSONParserAsync() {
                 @Override
                 protected void onPostExecute(Weather weather) {
+                    Toast.makeText(context, "updated", Toast.LENGTH_SHORT).show();
                     mWeather = weather;
                     onUpdate(context, AppWidgetManager.getInstance(context), intent.getExtras().getIntArray(AppWidgetManager.EXTRA_APPWIDGET_IDS));
                 }
