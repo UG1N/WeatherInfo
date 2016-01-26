@@ -8,6 +8,8 @@ public class Weather implements Serializable {
     private String mIcon;
     private float mLatitude;
     private float mLongitude;
+    private String mDescription;
+    private int mHumidity;
 
     public Weather() {
     }
@@ -50,6 +52,22 @@ public class Weather implements Serializable {
 
     public void setLongitude(float longitude) {
         mLongitude = longitude;
+    }
+
+    public String getDescription() {
+        return mDescription;
+    }
+
+    public void setDescription(String description) {
+        this.mDescription = description;
+    }
+
+    public int getHumidity() {
+        return mHumidity;
+    }
+
+    public void setHumidity(int humidity) {
+        this.mHumidity = humidity;
     }
 }
 

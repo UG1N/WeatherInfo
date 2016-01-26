@@ -35,11 +35,14 @@ class JSONParserAsync extends AsyncTask<String, Void, Weather> {
         JSONObject temperature = reader.getJSONObject("main");
         float celsius = Float.parseFloat(temperature.getString("temp"));
         result.setTemperature((int) celsius);
+        int humidity = Integer.parseInt(temperature.getString("humidity"));
+        result.setHumidity(humidity);
 
         JSONArray weather = reader.getJSONArray("weather");
         JSONObject weather_object = weather.getJSONObject(0);
         String weatherIcon = weather_object.getString("icon");
         result.setIcon("ic_" + weatherIcon);
+        result.setDescription(weather_object.getString("description"));
 
         JSONObject coord = reader.getJSONObject("coord");
         result.setLatitude((float) coord.getDouble("lat"));

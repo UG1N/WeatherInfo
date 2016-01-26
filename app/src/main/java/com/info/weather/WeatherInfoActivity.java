@@ -37,11 +37,13 @@ public class WeatherInfoActivity extends AppCompatActivity implements
 
     private Button mStartWeatherButton;
     private EditText mCityEditText;
-    private TextView mCityNameTextView;
-    private TextView mCityTemperatureTextView;
-    private ImageView mWeatherIcon;
+    private TextView mLocationNameTextView;
+    private TextView mLocationTemperatureTextView;
+    private ImageView mLocationWeatherIcon;
     private boolean weatherFormat = false;
     private Weather mWeather;
+    private TextView mLocationWeatherDescriptionTextView;
+    private TextView mLocationWeatherHumidityTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +52,7 @@ public class WeatherInfoActivity extends AppCompatActivity implements
         mWeather = new Weather();
 
         mCityEditText = (EditText) findViewById(R.id.search_name);
-        mWeatherIcon = (ImageView) findViewById(R.id.weather_icon);
+        mLocationWeatherIcon = (ImageView) findViewById(R.id.weather_icon);
         mStartWeatherButton = (Button) findViewById(R.id.show_me_the_weather);
         mStartWeatherButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -63,9 +65,9 @@ public class WeatherInfoActivity extends AppCompatActivity implements
             }
         });
 
-        mCityNameTextView = (TextView) findViewById(R.id.city_name);
-        mCityTemperatureTextView = (TextView) findViewById(R.id.temperature);
-        mCityTemperatureTextView.setOnClickListener(new View.OnClickListener() {
+        mLocationNameTextView = (TextView) findViewById(R.id.city_name);
+        mLocationTemperatureTextView = (TextView) findViewById(R.id.temperature);
+        mLocationTemperatureTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 weatherFormat = !weatherFormat;
@@ -76,6 +78,9 @@ public class WeatherInfoActivity extends AppCompatActivity implements
                         .build());
             }
         });
+
+        mLocationWeatherDescriptionTextView = (TextView) findViewById(R.id.weather_description);
+        mLocationWeatherHumidityTextView = (TextView) findViewById(R.id.weather_humidity);
 
         buildGoogleApiClient();
         mGoogleApiClient.connect();
@@ -96,11 +101,13 @@ public class WeatherInfoActivity extends AppCompatActivity implements
     }
 
     public void updateView() {
-        mCityNameTextView.setText(mWeather.getCity());
-        mCityTemperatureTextView.setText(getString(
+        mLocationNameTextView.setText(mWeather.getCity());
+        mLocationTemperatureTextView.setText(getString(
                 R.string.temperature_format, mWeather.getTemperature()));
-        mWeatherIcon.setImageResource(WeatherApi.iconResourceBuilder(this).weather(mWeather).build());
+        mLocationWeatherIcon.setImageResource(WeatherApi.iconResourceBuilder(this).weather(mWeather).build());
         mCityEditText.setText(mWeather.getCity());
+        mLocationWeatherDescriptionTextView.setText(mWeather.getDescription());
+        mLocationWeatherHumidityTextView.setText("Humidity: " + mWeather.getHumidity() + "%");
     }
 
     protected synchronized void buildGoogleApiClient() {

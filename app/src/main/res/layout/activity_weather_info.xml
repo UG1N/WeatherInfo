@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/activity_background"
     android:orientation="vertical"
     tools:context="info.weather.com.weather.WeatherInfoActivity">
 
@@ -11,7 +12,9 @@
         android:id="@+id/show_me_the_weather"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/weather_button"/>
+        android:background="@drawable/button"
+        android:text="@string/weather_button"
+        android:textColor="#fff"/>
 
     <EditText
         android:id="@+id/search_name"
@@ -20,28 +23,47 @@
         android:layout_height="wrap_content"
         android:inputType="text"/>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
     <TextView
         android:id="@+id/city_name"
         style="@style/Title"
         android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"/>
+
+
+    <ImageView
+        android:id="@+id/weather_icon"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"/>
+
+    <TextView
+        android:id="@+id/weather_description"
+        style="@style/ActivityBody"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/temperature"
+        style="@style/ActivityBody"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:textSize="@dimen/temperature_text_size"/>
 
-        <ImageView
-            android:id="@+id/weather_icon"
-            android:layout_width="50dp"
-            android:layout_height="50dp"/>
 
-        <TextView
-            android:id="@+id/temperature"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical"
-            android:textColor="#ff0077ff"
-            android:textSize="22sp"/>
-    </LinearLayout>
+    <TextView
+        android:id="@+id/weather_humidity"
+        style="@style/ActivityBody"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
 </LinearLayout>
