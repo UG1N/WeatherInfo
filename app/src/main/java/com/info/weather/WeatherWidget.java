@@ -74,7 +74,7 @@ public class WeatherWidget extends AppWidgetProvider {
                 new JSONParserAsync() {
                     @Override
                     protected void onPostExecute(Weather weather) {
-                        mWeather = weather;
+                        WeatherWidget.mWeather = weather;
                         onUpdate(context, intent);
                     }
                 }.execute(WeatherApi.locationBuilder()
