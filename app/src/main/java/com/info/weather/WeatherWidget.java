@@ -38,6 +38,7 @@ public class WeatherWidget extends AppWidgetProvider {
 
             Intent intent = new Intent(context, WeatherWidget.class);
             intent.setAction(UPDATE_WIDGET_BY_CLICK);
+            intent.putExtra(EXTRA_WEATHER, mWeather);
             intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, AppWidgetManager.getInstance(context)
                     .getAppWidgetIds(new ComponentName(context.getApplicationContext(), WeatherWidget.class)));
             pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -81,6 +82,7 @@ public class WeatherWidget extends AppWidgetProvider {
                         .untis(WeatherApi.LocationBuilder.Units.METRIC)
                         .build());
             } else {
+                mWeather = (Weather) intent.getExtras().getSerializable(EXTRA_WEATHER);
                 onUpdate(context, intent);
             }
         }
