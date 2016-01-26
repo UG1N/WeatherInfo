@@ -21,7 +21,6 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 
 import java.io.File;
-import java.util.Date;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
@@ -89,7 +88,6 @@ public class WeatherInfoActivity extends AppCompatActivity implements
                 if (weather != null) {
                     mWeather = weather;
                     updateView();
-                    Log.d("InfoActivity", new Date().toString() + " it should be first");
                 } else {
                     Log.e(TAG, "Can't get weather data from url: " + url, mException);
                 }
@@ -117,41 +115,46 @@ public class WeatherInfoActivity extends AppCompatActivity implements
 
     @Override
     public void onConnected(Bundle bundle) {
-        Toast.makeText(this, "onConnected", Toast.LENGTH_SHORT).show();
+        if (IoUtils.checkConnection(this)) {
 
-        if (ActivityCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) != PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, ACCESS_COARSE_LOCATION) != PERMISSION_GRANTED) {
-            return;
-        }
-
-        Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        if (location == null) {
-            return;
-        }
-
-        final String requestUrl = WeatherApi.coordinatesBuilder()
-                .latitude(location.getLatitude())
-                .longitude(location.getLongitude())
-                .build();
-
-        new JSONParserAsync() {
-            @Override
-            protected void onPostExecute(Weather weather) {
-                if (weather != null) {
-                    mWeather = weather;
-                    updateView();
-                    Intent intent = new Intent(WeatherInfoActivity.this, WeatherWidget.class);
-                    intent.setAction(WeatherWidget.SEND_ITEM);
-                    intent.putExtra(WeatherWidget.EXTRA_WEATHER, mWeather);
-                    int ids[] = AppWidgetManager.getInstance(getApplication()).
-                            getAppWidgetIds(new ComponentName(getApplication(), WeatherWidget.class));
-                    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
-                    sendBroadcast(intent);
-                } else {
-                    Log.e(TAG, "Can't get weather data from url: " + requestUrl, mException);
-                }
+            if (ActivityCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) != PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(this, ACCESS_COARSE_LOCATION) != PERMISSION_GRANTED) {
+                return;
             }
-        }.execute(requestUrl);
+
+            Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            if (location == null) {
+                return;
+            }
+
+            final String requestUrl = WeatherApi.coordinatesBuilder()
+                    .latitude(location.getLatitude())
+                    .longitude(location.getLongitude())
+                    .build();
+
+            new JSONParserAsync() {
+                @Override
+                protected void onPostExecute(Weather weather) {
+                    if (weather != null) {
+                        mWeather = weather;
+                        updateView();
+                        Intent intent = new Intent(WeatherInfoActivity.this, WeatherWidget.class);
+                        intent.setAction(WeatherWidget.ACTION_SEND_WEATHER);
+                        intent.putExtra(WeatherWidget.EXTRA_WEATHER, mWeather);
+                        int ids[] = AppWidgetManager.getInstance(getApplication()).
+                                getAppWidgetIds(new ComponentName(getApplication(), WeatherWidget.class));
+                        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
+                        sendBroadcast(intent);
+                    } else {
+                        Log.e(TAG, "Can't get weather data from url: " + requestUrl, mException);
+                    }
+                }
+            }.execute(requestUrl);
+        } else if ((new File(WeatherStorage.FILENAME)).exists()) {
+            mWeather = WeatherStorage.loadSavedWeather(this);
+            updateView();
+
+        }
     }
 
     @Override

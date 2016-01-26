@@ -6,14 +6,14 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.net.ConnectivityManager;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
 public class WeatherWidget extends AppWidgetProvider {
 
-    public static final String SEND_ITEM = "LOCATION_CHANGED";
+    public static final String ACTION_SEND_WEATHER = "LOCATION_CHANGED";
     public static final String EXTRA_WEATHER = "Weather";
+    public static final String UPDATE_WIDGET_BY_CLICK = "UpdateWidget";
 
     private static Weather mWeather;
 
@@ -35,9 +35,9 @@ public class WeatherWidget extends AppWidgetProvider {
             views.setTextViewText(R.id.widget_city, mWeather.getCity());
             views.setTextViewText(R.id.widget_temperature,
                     context.getString(R.string.temperature_format, mWeather.getTemperature()));
+
             Intent intent = new Intent(context, WeatherWidget.class);
-            intent.putExtra(EXTRA_WEATHER, mWeather);
-            intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+            intent.setAction(UPDATE_WIDGET_BY_CLICK);
             intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, AppWidgetManager.getInstance(context)
                     .getAppWidgetIds(new ComponentName(context.getApplicationContext(), WeatherWidget.class)));
             pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -64,34 +64,30 @@ public class WeatherWidget extends AppWidgetProvider {
 
     @Override
     public void onReceive(final Context context, final Intent intent) {
-        super.onReceive(context, intent);
-
-        if (SEND_ITEM.equals(intent.getAction())) {
-            weatherUpdate(context, intent);
-        } else if (mWeather != null) {
-            if (((ConnectivityManager)
-                    context.getSystemService(Context.CONNECTIVITY_SERVICE))
-                    .getActiveNetworkInfo().isConnectedOrConnecting()) {
+        if (ACTION_SEND_WEATHER.equals(intent.getAction())) {
+            mWeather = (Weather) intent.getSerializableExtra(EXTRA_WEATHER);
+            onUpdate(context, intent);
+        } else if (UPDATE_WIDGET_BY_CLICK.equals(intent.getAction())) {
+            Toast.makeText(context, "updated", Toast.LENGTH_SHORT).show();
+            if (IoUtils.checkConnection(context)) {
                 new JSONParserAsync() {
                     @Override
                     protected void onPostExecute(Weather weather) {
-                        Toast.makeText(context, "updated", Toast.LENGTH_SHORT).show();
                         mWeather = weather;
-                        onUpdate(context, AppWidgetManager.getInstance(context),
-                                intent.getExtras().getIntArray(AppWidgetManager.EXTRA_APPWIDGET_IDS));
+                        onUpdate(context, intent);
                     }
                 }.execute(WeatherApi.locationBuilder()
                         .location(mWeather.getCity())
                         .untis(WeatherApi.LocationBuilder.Units.METRIC)
                         .build());
             } else {
-                weatherUpdate(context, intent);
+                onUpdate(context, intent);
             }
         }
+        super.onReceive(context, intent);
     }
 
-    private void weatherUpdate(Context context, Intent intent) {
-        mWeather = (Weather) intent.getSerializableExtra(EXTRA_WEATHER);
+    private void onUpdate(Context context, Intent intent) {
         onUpdate(context, AppWidgetManager.getInstance(context),
                 intent.getExtras().getIntArray(AppWidgetManager.EXTRA_APPWIDGET_IDS));
     }

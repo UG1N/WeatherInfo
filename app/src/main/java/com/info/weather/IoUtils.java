@@ -1,5 +1,9 @@
 package com.info.weather;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,5 +29,16 @@ public final class IoUtils {
         }
         urlConnection.disconnect();
         return resultBuilder.toString();
+    }
+
+    public static boolean checkConnection(Context context) {
+        try {
+            ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+            return networkInfo != null && networkInfo.isConnectedOrConnecting();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
